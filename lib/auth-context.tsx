@@ -1,11 +1,13 @@
-import { createContext, useContext, useMemo } from "react";
-import { ID } from "react-native-appwrite";
+import { createContext, useContext, useEffect, useState } from "react";
+import { ID, Models } from "react-native-appwrite";
 import { account } from "./appwrite";
 
 type AuthContextType = {
-  // user: Models.User<Models.Preferences> | null;
+  user: Models.User<Models.Preferences> | null;
+  isLoadingUser: boolean;
   signUp: (email: string, password: string) => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<string | null>;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -13,6 +15,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(
+    null
+  );
+
+  const [isLoadingUser, setIsLoadingUser] = useState<boolean>(true);
+
+  useEffect(() => {
+    getUser();
+  }, []);
+
+  const getUser = async () => {
+    try {
+      const user = await account.get();
+      setUser(user);
+    } catch (error) {
+      setUser(null);
+      console.error(error);
+    } finally {
+      setIsLoadingUser(false);
+    }
+  };
+
   const signUp = async (email: string, password: string) => {
     try {
       await account.create(ID.unique(), email, password);
@@ -40,8 +64,22 @@ export function AuthProvider({
     }
   };
 
-  const obj = useMemo(() => ({ signUp, signIn }), []);
-  return <AuthContext.Provider value={obj}>{children}</AuthContext.Provider>;
+  const signOut = async () => {
+    try {
+      await account.deleteSession("current");
+      setUser(null);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{ user, isLoadingUser, signUp, signIn, signOut }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
