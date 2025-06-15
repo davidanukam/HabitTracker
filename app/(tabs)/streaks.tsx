@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 
-export default function Login() {
+export default function StreaksScreen() {
   return (
     <View
       style={{
@@ -9,7 +9,7 @@ export default function Login() {
         alignItems: "center",
       }}
     >
-      <Text>Login</Text>
+      <Text>Streaks</Text>
     </View>
   );
 }
